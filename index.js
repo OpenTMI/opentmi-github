@@ -8,13 +8,15 @@ function AddonGithub (app, server, io, passport){
 	this.name = 'GitHub addon';
 	this.description = 'Integrate Github to TMT';
   this.listDependencies = ['github'];
-  var orgId = 'ARMmbed';
-  if( !nconf.get('github')  ) {
-    winston.error('github not configured');
-    return;
-  }
+  
   var github;
 	this.register = function(){
+    var cfg = nconf.get('github');
+    if( !cfg || !cfg.authentication ) {
+      winston.error('github not configured');
+      return;
+    }
+
 		app.get('/github', function(req, res){
 		  res.json({ok: 1});
 		});
@@ -36,7 +38,7 @@ function AddonGithub (app, server, io, passport){
       console.log(repos);
     });*/
     var lookupOrg = function() {
-      github.orgs.get( {org: orgId }, function(err, res){
+      github.orgs.get( {org: cfg.orgId }, function(err, res){
         if( err ){
           return winston.error(err);
         }
