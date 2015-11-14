@@ -9,7 +9,6 @@ function AddonGithub (app, server, io, passport){
     this.description = 'Integrate Github to TMT';
     this.listDependencies = ['github'];
   
-    var github;
     var cfg = nconf.get('github');
     
     this.register = function(){
@@ -18,19 +17,28 @@ function AddonGithub (app, server, io, passport){
           winston.error('github not configured');
           return;
         }
+        
+        global.pubsub.emit('status.now.init', {
+            github: {
+              public_repos: 0,
+              private_repos: 0,
+              total_repos: 0,
+              disk_usage: 0
+            }
+        });
 
         app.get('/github', function(req, res){
           res.json({ok: 1});
         });
 
-        github = self.github = new GitHubApi({
+        self.github = new GitHubApi({
             // required 
             version: "3.0.0",
             // optional 
             //debug: true,  
             timeout: 5000,
         });
-        github.authenticate( cfg.authentication );
+        self.github.authenticate( cfg.authentication );
         /*
         github.repos.getAll({}, function(error, repos){
           console.log("repos.getAll()");
@@ -38,19 +46,25 @@ function AddonGithub (app, server, io, passport){
           console.log(repos);
         });*/
         var lookupOrg = function() {
-          github.orgs.get( {org: cfg.orgId }, function(err, res){
+          
+          self.github.orgs.get( {org: cfg.orgId }, function(err, res){
             if( err ){
               return winston.error(err);
             }
-            global.pubsub.emit('github', {
-              public_repos: res.public_repos,
-              private_repos: res.total_private_repos,
-              disk_usage: res.disk_usage
+            var githubStatus = {
+                total_repos: (res.public_repos + res.total_private_repos),
+                public_repos: res.public_repos,
+                private_repos: res.total_private_repos,
+                disk_usage: res.disk_usage
+            }
+            console.log("lookupOrg: "+JSON.stringify(githubStatus));
+            global.pubsub.emit('status.now', {
+              github: githubStatus
             })
+            setTimeout( lookupOrg, 30*60000 );
           });
         }
-        setInterval( lookupOrg, 10000 );
-    
+        setTimeout( lookupOrg, 1000 );
     }
     return this;
 }
