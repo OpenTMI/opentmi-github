@@ -1,0 +1,36 @@
+
+{
+  "name": "tmt-github",
+  "version": "0.1.0",
+  "description": "TMT github addon",
+  "main": "index.js",
+  "scripts": {
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.com/_tmt_/tmt-github.git"
+  },
+  "keywords": [
+    "test",
+    "automation",
+    "management",
+    "github"
+  ],
+  "author": "Jussi Vatjus-Anttila <jussiva@gmail.com>",
+  "license": "MIT",
+  "readmeFilename": "Readme.md",
+  "tmt": {
+    "id": "github",
+    "title": "Github",
+    "type": "provider",
+    "hosted": true,
+    "config": {
+      "controller": "BitbucketCtrl"
+    }
+  },
+  "devDependencies": {
+  },
+  "dependencies": {
+    "github": "*"
+  }
+}
