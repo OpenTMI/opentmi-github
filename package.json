@@ -1,36 +1,40 @@
-
 {
-  "name": "tmt-github",
+  "name": "opentmi-github",
   "version": "0.1.0",
-  "description": "TMT github addon",
+  "description": "OpenTMI github addon",
   "main": "index.js",
   "scripts": {
   },
   "repository": {
     "type": "git",
-    "url": "https://bitbucket.com/_tmt_/tmt-github.git"
+    "url": "https://github.com/OpenTMI/opentmi-github.git"
   },
   "keywords": [
+    "opentmi",
     "test",
     "automation",
     "management",
     "github"
   ],
   "author": "Jussi Vatjus-Anttila <jussiva@gmail.com>",
-  "license": "MIT",
-  "readmeFilename": "Readme.md",
-  "tmt": {
+  "license": "GPLv3",
+  "readmeFilename": "README.md",
+  "opentmi": {
     "id": "github",
     "title": "Github",
     "type": "provider",
     "hosted": true,
     "config": {
-      "controller": "BitbucketCtrl"
+      "controller": "GithubCtrl"
     }
   },
   "devDependencies": {
   },
   "dependencies": {
-    "github": "*"
+    "github": "*",
+    "winston": "*",
+    "nconf": "*",
+    "underscore": "*"
+  }
   }
 }

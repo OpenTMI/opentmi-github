@@ -7,7 +7,6 @@ function AddonGithub (app, server, io, passport){
     var self = this;
     this.name = 'GitHub addon';
     this.description = 'Integrate Github to TMT';
-    this.listDependencies = ['github'];
   
     var cfg = nconf.get('github');
     
