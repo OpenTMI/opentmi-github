@@ -2,12 +2,10 @@ var GitHubApi = require("github");
 var nconf = require('nconf');
 var winston = require('winston');
 var _ = require('underscore');
+var async = require('async');
 
 function AddonGithub (app, server, io, passport){
     var self = this;
-    this.name = 'GitHub addon';
-    this.description = 'Integrate Github to TMT';
-  
     var cfg = nconf.get('github');
     
     this.register = function(){
@@ -26,8 +24,56 @@ function AddonGithub (app, server, io, passport){
             }
         });
 
-        app.get('/github', function(req, res){
-          res.json({ok: 1});
+        app.get('/github/yotta', function(req, res){
+          getAllRepos( function(error, repos){
+            if(error) return res.status(404).json(error);
+            var repoNames = _.map(repos, function(data){
+              return {user: cfg.orgId, name: data.name} ;
+            });
+            console.log(repoNames);
+            function filter(data, cb){
+              console.log('fetch module json if exists..')
+              getModuleJson(data.user, data.name, cb);
+            }
+            async.map(repoNames, filter, 
+              function(error, data){
+              if(error)console.log(error);
+              data = _.filter( data, function(obj, cb){
+                return obj;
+              });
+              res.json(data);
+            });
+          });
+        });
+
+
+        function getModuleJson(user, repo, cb){
+          var msg = {
+            user: user,
+            repo: repo,
+            path: '/module.json'
+          };
+          console.log(msg);
+          self.github.repos.getContent(msg, 
+            function(error, data){
+            if(error)return cb();
+            try{
+              var content = new Buffer(data.content, 'base64').toString("ascii");
+              data.decoded = JSON.parse(content);
+            } catch(err){
+              console.log('Repo: '+repo+' didnt contains valid module.json');
+              return cb()
+            }
+            cb(error, data.decoded);
+          })
+        }
+
+        app.get('/github/:user/repos/:repo', function(req, res){
+          getModuleJson(req.params.user, req.params.repo, 
+            function(error, content){
+            if(error)res.status(error.code).json(error)
+            else res.json(content);
+          })
         });
 
         self.github = new GitHubApi({
@@ -38,12 +84,38 @@ function AddonGithub (app, server, io, passport){
             timeout: 5000,
         });
         self.github.authenticate( cfg.authentication );
-        /*
-        github.repos.getAll({}, function(error, repos){
-          console.log("repos.getAll()");
-          console.log(error);
-          console.log(repos);
-        });*/
+        
+        function getAllRepos(cb){
+          var repositories = [];
+          var per_page = 100;
+          var limit = 0;
+
+          function fetchPage(page, sub_cb){
+            self.github.repos.getAll({
+              id: cfg.orgId,
+              page: page,
+              per_page: per_page,
+              }, function(error, repos){
+              console.log("got "+repos.length+" repo");
+              sub_cb(error, repos, page);
+            });
+          }
+          function processPage(error, repos, page){
+            if(error) {
+              return cb(error);
+            }
+            repositories = repositories.concat( repos );
+            console.log(repositories.length)
+            var enough = limit>0?repositories.length>=limit:false;
+            if( repos.length === per_page && !enough){
+              return fetchPage(page+1, processPage);
+            }
+            cb(error, repositories);
+          }
+          fetchPage(0, processPage)
+        }
+        
+
         var lookupOrg = function() {
           
           self.github.orgs.get( {org: cfg.orgId }, function(err, res){
