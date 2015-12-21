@@ -1,3 +1,4 @@
+var express = require('express');
 var GitHubApi = require("github");
 var nconf = require('nconf');
 var winston = require('winston');
@@ -15,6 +16,8 @@ function AddonGithub (app, server, io, passport){
           return;
         }
         
+        cfg.url = cfg.url || 'http://opentmi/'
+        
         global.pubsub.emit('status.now.init', {
             github: {
               public_repos: 0,
@@ -23,6 +26,51 @@ function AddonGithub (app, server, io, passport){
               disk_usage: 0
             }
         });
+        
+        var webhookRouter = express.Router();
+        var hooks = []
+        var getWebhooks = function(req, res) {
+            res.json(hooks);
+        }
+        var createWebhook = function(req, res) {
+            if( !cfg.url ) {
+                return res.status(404).json({error: 'url not configured!'});
+            }
+            console.log(req.body);
+            if(!req.body.user || !req.body.repo){
+                return res.status(403).json({error: 'missing user/repo'});
+            }
+            self.github.repos.createHook( {
+                    user: req.body.user,
+                    repo: req.body.repo,
+                    name: 'web',
+                    config: {
+                        "url": cfg.url+"/github/webhoook/hook",
+                        "content_type": "json"
+                    },
+                    event: ['push', 'issue', 'status', 'watch', 'fork', 'pull_request', 'release'],
+                    active: true
+            }, function(error, data){
+                if(error) {
+                    console.log(error);
+                    res.status(500).json(data);
+                    return;
+                } 
+                hooks.push(data);
+                res.json(data);
+            });
+        }
+        var webhook = function(req, res) {
+            console.log('webhook received from GitHub. Body:');
+            console.log(req.body);
+            io.emit('github.webhook', req.body);
+            global.pubsub.emit('github.webhook', req.body);
+            res.status(200).json({message: 'webhook received by OpenTMI'});
+        }
+        webhookRouter.get('/', getWebhooks);
+        webhookRouter.post('/', createWebhook);
+        webhookRouter.post('/hook', webhook)
+        app.use('/github/webhook', webhookRouter);
 
         app.get('/github/yotta', function(req, res){
           getAllRepos( function(error, repos){
