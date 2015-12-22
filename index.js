@@ -63,7 +63,6 @@ function AddonGithub (app, server, io, passport){
         var webhook = function(req, res) {
             console.log('webhook received from GitHub. Body:');
             console.log(req.body);
-            io.emit('github.webhook', req.body);
             global.pubsub.emit('github.webhook', req.body);
             res.status(200).json({message: 'webhook received by OpenTMI'});
         }
