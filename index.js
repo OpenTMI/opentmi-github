@@ -64,20 +64,24 @@ function AddonGithub (app, server, io, passport){
         var sendGuiNotifyFromGithubHook = function(data) {
             console.log(data);
             function getUrl(text, url){
-                text = text || data.repository.full_name;
-                url = url || data.head_commit.url;
+                var text = text || data.repository.full_name;
+                var url = url || data.repository.url;
                 return '<a href="'+url+'">'+text+'</a>'
             }
             var noty = {text: 'github hook', delay: 4000}
-            
-            if( data.ref == 'refs/heads/master' && data.before && data.after ) {
-              noty.text = 'New commit received to '+getUrl();
-            } else if( data.action === 'opened' && data.pull_request ){
-                noty.text = 'New '+getUrl(data.repository.full_name+":PR#"+data.pull_request.number, data.pull_request.html_url)+' created';
-            } else if( data.action === 'opened' && data.pull_request ){
-                noty.text = 'New '+getUrl(data.repository.full_name+":PR#"+data.pull_request.number, data.pull_request.html_url)+' created';
-            } else {
-              noty.text = 'github hook '+getUrl();
+            try {
+                if( data.ref == 'refs/heads/master' && data.before && data.after ) {
+                  noty.text = 'New commit received to '+getUrl(null, data.head_commit.url);
+                } else if( data.action === 'opened' && data.pull_request ){
+                    noty.text = 'New '+getUrl(data.repository.full_name+":PR#"+data.pull_request.number, data.pull_request.html_url)+' created';
+                } else if( data.action === 'opened' && data.issue ){
+                    noty.text = 'New '+getUrl(data.repository.full_name+":issue#"+data.issue.number, data.issue.html_url)+' created';
+                } else {
+                  noty.text = 'github hook '+getUrl();
+                }
+            } catch(e) {
+                noty.text = e;
+                noty.type = 'error';
             }
             global.pubsub.emit('notify', noty);
         }
@@ -86,6 +90,7 @@ function AddonGithub (app, server, io, passport){
             console.log('webhook received from GitHub. Body:');
             console.log(req.body);
             sendGuiNotifyFromGithubHook(req.body);
+            io.emit('github.webhook', req.body);
             global.pubsub.emit('github.webhook', req.body);
             res.status(200).json({message: 'webhook received by OpenTMI'});
         }
