@@ -60,9 +60,32 @@ function AddonGithub (app, server, io, passport){
                 res.json(data);
             });
         }
+        
+        var sendGuiNotifyFromGithubHook = function(data) {
+            console.log(data);
+            function getUrl(text, url){
+                text = text || data.repository.full_name;
+                url = url || data.head_commit.url;
+                return '<a href="'+url+'">'+text+'</a>'
+            }
+            var noty = {text: 'github hook', delay: 4000}
+            
+            if( data.ref == 'refs/heads/master' && data.before && data.after ) {
+              noty.text = 'New commit received to '+getUrl();
+            } else if( data.action === 'opened' && data.pull_request ){
+                noty.text = 'New '+getUrl(data.repository.full_name+":PR#"+data.pull_request.number, data.pull_request.html_url)+' created';
+            } else if( data.action === 'opened' && data.pull_request ){
+                noty.text = 'New '+getUrl(data.repository.full_name+":PR#"+data.pull_request.number, data.pull_request.html_url)+' created';
+            } else {
+              noty.text = 'github hook '+getUrl();
+            }
+            global.pubsub.emit('notify', noty);
+        }
+        
         var webhook = function(req, res) {
             console.log('webhook received from GitHub. Body:');
             console.log(req.body);
+            sendGuiNotifyFromGithubHook(req.body);
             global.pubsub.emit('github.webhook', req.body);
             res.status(200).json({message: 'webhook received by OpenTMI'});
         }
