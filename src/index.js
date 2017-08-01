@@ -1,8 +1,9 @@
+// 3rd party modules
 const Promise = require('bluebird');
-const nconf = require('../../../../config');
 const express = require('express');
-const GitHubApi = require("github");
 
+// application modules
+const nconf = require('../../../../config');
 const logger = require('../../../tools/logger');
 const GithubController = require('./GithubController');
 
@@ -44,7 +45,6 @@ class AddonGithub extends GithubController {
     };
     this.yotta(dummyReq, dummyRes);*/
     logger.warn('registering instance of sample class');
-    this.router.get('/github', (req, res) => { res.json({msg: 'test'});})
     this.router.get('/github/webhook', this.getWebhooks.bind(this));
     this.router.post('/github/webhook', this.createWebhook.bind(this));
     this.router.post('/github/event', this.webhook.bind(this))
