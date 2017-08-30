@@ -31,9 +31,6 @@
   "devDependencies": {
   },
   "dependencies": {
-    "github": "*",
-    "winston": "*",
-    "nconf": "*",
-    "underscore": "*"
+    "github": "*"
   }
 }
