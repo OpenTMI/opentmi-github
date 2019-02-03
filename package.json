@@ -3,8 +3,7 @@
   "version": "0.1.0",
   "description": "OpenTMI github addon",
   "main": "index.js",
-  "scripts": {
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "https://github.com/OpenTMI/opentmi-github.git"
@@ -28,9 +27,9 @@
       "controller": "GithubCtrl"
     }
   },
-  "devDependencies": {
-  },
+  "devDependencies": {},
   "dependencies": {
-    "github": "*"
+    "github": "*",
+    "opentmi-addon": "git+https://github.com/opentmi/opentmi-addon.git"
   }
 }

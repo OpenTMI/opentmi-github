@@ -2,35 +2,36 @@
 const Promise = require('bluebird');
 const express = require('express');
 
+// opentmi modules
+const {Addon} = require('opentmi-addon');
+
 // application modules
-const nconf = require('../../../../config');
-const logger = require('../../../tools/logger');
 const GithubController = require('./GithubController');
 
 
-class AddonGithub extends GithubController {
-  constructor(app, server, io) {
-    super();
-    // Defined variables
-    this.config = nconf.get('github');
-
+class AddonGithub extends Addon {
+  constructor(...args) {
+    super(...args);
     // Own variables
+    this.controller = new GithubController(this._settings);
     this.router = express.Router();
-    this.app = app;
-    this.server = server;
-    this.io = io;
+    this.getWebhooks = this.controller.getWebhooks.bind(this.controller);
+    this.createWebhook = this.controller.createWebhook.bind(this.controller);
+    this.webhook = this.controller.webhook.bind(this.controller);
+    this.yotta = this.controller.yotta.bind(this.controller);
+    this.getModuleJson = this.controller.getModuleJson.bind(this.controller);
   }
 
   // Default implementation of register
   register() {
-    if (!this.config ||
-      !this.config.clientID ||
-      !this.config.clientSecret ) {
-      logger.error('github not configured');
+    if (!this._settings ||
+      !this._settings.clientID ||
+      !this._settings.clientSecret ) {
+      this.logger.error('github not configured');
       return Promise.reject("Github not configured");
     }
 
-    this.login();
+    return this.controller.login();
 
     /*
     let dummyReq = {
@@ -44,19 +45,19 @@ class AddonGithub extends GithubController {
       json(){}
     };
     this.yotta(dummyReq, dummyRes);*/
-    logger.warn('registering instance of sample class');
-    this.router.get('/github/webhook', this.getWebhooks.bind(this));
-    this.router.post('/github/webhook', this.createWebhook.bind(this));
-    this.router.post('/github/event', this.webhook.bind(this))
-    this.router.get('/yotta', this.yotta.bind(this))
-    this.router.get('/yotta/:user/:repo', this.getModuleJson.bind(this));
+    this.logger.warn('registering instance of sample class');
+    this.router.get('/github/webhook', this.getWebhooks);
+    this.router.post('/github/webhook', this.createWebhook);
+    this.router.post('/github/event', this.webhook)
+    this.router.get('/yotta', this.yotta)
+    this.router.get('/yotta/:user/:repo', this.getModuleJson);
     // attach router
     this.app.use('/', this.router);
     this.io.on('connection', super.ioConnection);
   }
 
   unregister() {
-    logger.warn('unregistering github... not implemented');
+    this.logger.warn('unregistering github... not implemented');
     return Promise.reject("Not implemented");
   }
 }

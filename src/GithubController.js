@@ -1,6 +1,5 @@
 const Promise = require('bluebird');
 const _ = require('lodash');
-const async = require('async');
 const GitHubApi = require("github");
 
 
@@ -9,7 +8,8 @@ const eventBus = require('../../../tools/eventBus');
 const logger = require('../../../tools/logger');
 
 class GithubController {
-  constructor() {
+  constructor(config) {
+    this._config = config;
     this._hookEvents = [
       'push', 'issue', 'status',
       'watch', 'fork', 'pull_request',
@@ -25,18 +25,17 @@ class GithubController {
         //debug: true,
         timeout: 5000,
     });
-    let authentication = {
-      type: "oauth",
-      key: this.config.clientID,
-      secret: this.config.clientSecret
-    }
-    this.github.authenticate(authentication);
+
+    const type = "oauth";
+    const key =  this._config.clientID;
+    const secret = this._config.clientSecret;
+    return this.github.authenticate({type, key, secret});
   }
   getWebhooks(req, res) {
       res.json(this._hooks);
   }
   ioConnection(socket) {
-    logger.info('Io connection made.');
+    logger.info('github: io connection made.');
     socket.emit('test', 'hello client');
     socket.on('hello', function (data) {
       logger.info(data);
@@ -204,7 +203,6 @@ class GithubController {
   yotta(req, res){
     this.getAllRepos()
     .then(resp => {
-      console.log(resp);
       let repos = resp.data;
       let repoNames = _.map(repos, function(data){
         return {user: this.config.organization, name: data.name} ;
